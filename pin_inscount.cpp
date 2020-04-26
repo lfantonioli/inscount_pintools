@@ -29,10 +29,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 END_LEGAL */
 #include <iostream>
-#include <fstream>
 #include "pin.H"
-
-ofstream OutFile;
 
 // The running count of instructions is kept here
 // make it static to help the compiler optimize docount
@@ -48,26 +45,19 @@ VOID Instruction(INS ins, VOID *v)
     INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_END);
 }
 
-KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "inscount.out", "specify output file name");
-
 // This function is called when the application exits
 VOID Fini(INT32 code, VOID *v)
 {
-    // Write to a file since cout and cerr maybe closed by the application
-    OutFile.setf(ios::showbase);
-    OutFile << "Count " << icount << endl;
-    OutFile.close();
+    std::cout << "Count: " << icount << std::endl;
 }
 
 /* ===================================================================== */
 /* Print Help Message                                                    */
 /* ===================================================================== */
 
-INT32 Usage()
+INT32 ErrorInitPin()
 {
-    cerr << "This tool counts the number of dynamic instructions executed" << endl;
-    cerr << endl << KNOB_BASE::StringKnobSummary() << endl;
+    cerr << "Could not initialize Pin" << endl;
     return -1;
 }
 
@@ -80,9 +70,7 @@ INT32 Usage()
 int main(int argc, char * argv[])
 {
     // Initialize pin
-    if (PIN_Init(argc, argv)) return Usage();
-
-    OutFile.open(KnobOutputFile.Value().c_str());
+    if (PIN_Init(argc, argv)) return ErrorInitPin();
 
     // Register Instruction to be called to instrument instructions
     INS_AddInstrumentFunction(Instruction, 0);
